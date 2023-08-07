@@ -10,7 +10,7 @@ a.readFromSqlLite('../HDMap/lingang/shp_utm/Lane_boundary.shp')
 a.readFromSqlLite('../HDMap/lingang/shp_utm/Lane_centerline.shp')
 a.readFromSqlLite('../HDMap/lingang/shp_utm/Road_centerline.shp')
 
-o = hd_map.OGRPointWrapper()
+# o = hd_map.OGRPointWrapper()
 
 # 根据LC_id找到其他信息
 def LC_id2all(LC_id):
@@ -53,7 +53,7 @@ def LC_id2all(LC_id):
     print('Traffic_id: ', traffic_id)
     return 0
 
-LC_id2all(14026440)
+# LC_id2all(14026440)
 
 def LC2intersection(LC_id):
     tmp = a.getFeatureByUid('Lane_centerline', LC_id)
@@ -62,8 +62,8 @@ def LC2intersection(LC_id):
     Sec_outer = tmp.GetFieldAsInteger64('Sec_outer')
     return 0
 
-def Point2LC_id(X, Y, Z):
-    tp = a.get_closest_lCid_by_point(X, Y, Z)
+def Point2LC_id(X, Y, Z, c):
+    tp = a.get_closest_LCid_by_point(X, Y, Z, c)
     return tp
     # # P = OGRPoint(X, Y, Z)
     # P = ogr.Geometry(ogr.wkbPoint)
@@ -80,9 +80,39 @@ def Point2LC_id(X, Y, Z):
     # # tp = v.GetFieldAsInteger64("Uid")
     # # return tp
 
-# LC = Point2LC_id(396800.477202547714114, 3418392.700545833911747, 15.864680063119482)
-# LC_id2all(LC)
+def Point2all(X, Y, Z):
+    LC_info0 = Point2LC_id(X, Y, Z)
+    LC_info = str(LC_info0)
+    LC_id2all(LC_info)
+    return 0
 
+LC = Point2LC_id(396800.477202547714114, 3418392.700545833911747, 15.864680063119482, 14027475)
+print("LC_id:", LC)
+LC_id2all(LC)
+
+# 定义一个函数，输入为点的坐标和直线的方向向量
+def point_to_line_distance_3d(point, vector):
+  # 计算点的坐标
+  x = point[0]
+  y = point[1]
+  z = point[2]
+
+  # 计算直线的方向向量
+  a = vector[0]
+  b = vector[1]
+  c = vector[2]
+
+  # 使用点到直线距离公式：d = |(a * x + b * y + c * z) / sqrt(a^2 + b^2 + c^2)|
+  d = abs((a * x + b * y + c * z) / ((a ** 2 + b ** 2 + c ** 2) ** 0.5))
+
+  # 返回距离
+  return d
+
+# 测试函数
+point = (1, 2, 3) # 点的坐标
+vector = (4, -5, 6) # 直线的方向向量
+distance = point_to_line_distance_3d(point, vector) # 调用函数
+print(f"The distance from point {point} to line {vector} is {distance:.2f}") # 打印结果
 
 # tmp = a.getFeatureByUid('Traffic_light', 2772)
 # print(tmp.isValid())

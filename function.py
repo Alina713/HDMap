@@ -1,5 +1,5 @@
 import hd_map
-from osgeo import ogr
+# from osgeo import ogr
 # import numpy as np
 # from scipy.spatial import KDTree
 
@@ -124,3 +124,7 @@ def Point2LC_id(X, Y, Z):
     # geo = hd_map.OGRLineString(geo)
     # for i in geo.getPoints():
     #     print(i.getX(), i.getY(), i.getZ())
+
+    def ogrget(X, Y, Z):
+        
+        return 0

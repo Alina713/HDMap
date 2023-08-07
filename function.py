@@ -10,6 +10,8 @@ a.readFromSqlLite('../HDMap/lingang/shp_utm/Lane_boundary.shp')
 a.readFromSqlLite('../HDMap/lingang/shp_utm/Lane_centerline.shp')
 a.readFromSqlLite('../HDMap/lingang/shp_utm/Road_centerline.shp')
 
+o = hd_map.OGRPointWrapper()
+
 # 根据LC_id找到其他信息
 def LC_id2all(LC_id):
     # 道路 左右车道边界 道路第几车道
@@ -125,6 +127,6 @@ def Point2LC_id(X, Y, Z):
     # for i in geo.getPoints():
     #     print(i.getX(), i.getY(), i.getZ())
 
-    def ogrget(X, Y, Z):
-        
-        return 0
+# def ogrget(X, Y, Z):
+#     OGRPointWrapper(X, Y, Z)
+#     return 0

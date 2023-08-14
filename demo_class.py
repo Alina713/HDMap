@@ -5,6 +5,7 @@ from osgeo import ogr
 # import ogr
 import numpy as np
 from tqdm import tqdm
+from collections import defaultdict
 
 # 继承map.py中的class HDMap
 class HDMapDemo(HDMap):
@@ -155,44 +156,68 @@ class HDMapDemo(HDMap):
     
     def light2Sec(self):
         cnt = 0
-        tp = {}
+        tp = defaultdict(list)
         tp_ans = []
 
         TL_num = self.set_X_info('Traffic_light')
         Sec_num = self.set_X_info('Intersection')
         Lane_num = self.set_X_info('Lane_centerline')
         for i in range(TL_num):
+            # lane_info
+            # 遍历traffic_light中effectlane不为None的项
+            if self.Traffic_light[i][7] != None:
+                tp_LC = self.Traffic_light[i][7].split(",")
+                # 在LC中 遍历单个feature中的每一个lane_id 对应的feature
+                for a in tp_LC:
+                    # print(type(a))
+                    LC_id = int(a)
+                    LC_e_node = -1
+                    # 遍历LC查找起始ID
+                    for x in self.lanecenterlines:
+                        if x[1] == LC_id:
+                            LC_e_node = x[3]
+                            
+
+                    # 遍历LC查找起始点为真实车道终止点的虚拟车道线UID
+                    for y in self.lanecenterlines:
+                        # if y[2] == LC_e_node & y[8] == 3:
+                        if y[2] == LC_e_node:
+                            if y[8] == 3:
+                                tp[a].append(y[1])
+                                cnt+=1
+                            
+        l = list(tp.items())
+        print(l[0])
+                    
+
+                    # tp_f = self.a.getFeatureByUid('Lane_centerline', LC_id)
+                    # v = tp_f.GetFieldAsInteger64('Is_virtual')
+                    # if v==3:
+                    #     # cnt+=1
+                    #     print(a)
             # 信号灯控制的虚拟车道是否可以通行
-            # road_info
-            if self.Traffic_light[i][8] != None:
-                tp_RC = self.Traffic_light[i][8].split(",")
-                # 遍历traffic_light中effectroad不为None的项
-                for item in tp_RC:
-                    RC_id = item
-                    # 遍历intersection中in_id包含effectroad的项
-                    for j in range(Sec_num):
-                        if RC_id in self.intersections[j][4]:
-                            tp_lane = []
-                            tp_vir_lane = []
-                            # 遍历LC中的真实车道与虚拟车道并匹配
-                            for a in self.lanecenterlines:
-                                if a[4] == RC_id:
-                                    if a[5] == 3:
-                                        # 保存虚拟车道线UID
-                                        tp_vir_lane.append(a[1])
-                                    else:
-                                        tp_lane.append(a[1])
-                            # print(RC_id)
-                            # cnt+=1
-            # if self.Traffic_light[i][7] != None:
-            #     tp_LC = self.Traffic_light[i][7].split(",")
-            #     for a in tp_LC:
-            #         LC_id = int(a)
-            #         tp_f = self.a.getFeatureByUid('Lane_centerline', LC_id)
-            #         v = tp_f.GetFieldAsInteger64('Is_virtual')
-            #         if v==3:
-            #             # cnt+=1
-            #             print(a)
+            # # road_info
+            # if self.Traffic_light[i][8] != None:
+            #     tp_RC = self.Traffic_light[i][8].split(",")
+            #     # 遍历traffic_light中effectroad不为None的项
+            #     for item in tp_RC:
+            #         RC_id = item
+            #         # 遍历intersection中in_id包含effectroad的项
+            #         for j in range(Sec_num):
+            #             if RC_id in self.intersections[j][4]:
+            #                 tp_lane = []
+            #                 tp_vir_lane = []
+            #                 # 遍历LC中的真实车道与虚拟车道并匹配
+            #                 for a in self.lanecenterlines:
+            #                     if a[4] == RC_id:
+            #                         if a[5] == 3:
+            #                             # 保存虚拟车道线UID
+            #                             tp_vir_lane.append(a[1])
+            #                         else:
+            #                             tp_lane.append(a[1])
+            #                 # print(RC_id)
+            #                 # cnt+=1
+            
         # print(cnt)   
 
 

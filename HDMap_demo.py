@@ -1,4 +1,4 @@
-from map import HDMap
+from map import Map
 import hd_map
 from osgeo import ogr
 # import gdal
@@ -7,8 +7,8 @@ import numpy as np
 from tqdm import tqdm
 from collections import defaultdict
 
-# 继承map.py中的class HDMap
-class HDMapDemo(HDMap):
+# 继承map.py中的class Map
+class HDMap(Map):
     # 可修改为anting
     map_name = 'lingang'
     a = hd_map.HDMap()
@@ -29,6 +29,15 @@ class HDMapDemo(HDMap):
         self.RC2LCC = {}
         self.LCCstatus = {}
         self.Traffic_light = {}
+        self.L2Light_flag = {}
+
+
+        for i in range(self.set_X_info('Traffic_light')):
+            if self.Traffic_light[i][7] != None:
+                tp_LC = self.Traffic_light[i][7].split(",")
+                for a in tp_LC:
+                    LC_id = int(a)
+                    self.L2Light_flag[LC_id] = 1
         
         # self._get_intersections()
         # self._get_real_lanes()
@@ -154,7 +163,24 @@ class HDMapDemo(HDMap):
         Sec_outer = tmp.GetFieldAsInteger64('Sec_outer')
         return Sec_outer
     
-    # 找到traffic light中 真实车道_虚拟车道-真实车道的数组并返回
+
+    def lane_is_in_intersection(self, L_id):
+        tmp = self.a.getFeatureByUid('Lane_centerline', L_id)
+        # print(tmp.isValid())
+        Sec_inter = tmp.GetFieldAsInteger64('Sec_inter')
+        Sec_outer = tmp.GetFieldAsInteger64('Sec_outer')
+        if Sec_inter == 0 & Sec_outer == 0:
+            return False
+        else:
+            return True
+        
+
+    def lane_has_traffic_control_measure(self, L_id):
+        if L_id in self.lanecenterlineconnectors.keys():
+            return self.lanecenterlineconnectors[L_id]["has_traffic_light"]
+        return False
+    
+    # 找到traffic light中 真实车道-虚拟车道-真实车道的数组并返回
     def Lane_r2v2r_Light(self):
         # cnt = 0
         tp = []
@@ -228,8 +254,11 @@ class HDMapDemo(HDMap):
 
         arr = self.Lane_r2v2r_Light()
         TL_num = self.set_X_info('Traffic_light')
+        print(111)
         Sec_num = self.set_X_info('Intersection')
+        print(111)
         Lane_num = self.set_X_info('Lane_centerline')
+        print(111)
 
         ans = []
 
@@ -237,6 +266,7 @@ class HDMapDemo(HDMap):
             r1 = -1
             r2 = -1
             for i in self.lanecenterlines:
+                # 起始真实车道 与 终止真实车道分别位于的RC_id
                 if item[0] == i[1]:
                     r1 = i[4]
 
@@ -255,148 +285,42 @@ class HDMapDemo(HDMap):
         print(cnt)
         print(ans[0])
 
-        # def Lane_r2v2r(self):
-    #     # cnt = 0
-    #     tp = defaultdict(list)
-    #     # tp_ans = []
+    def update_light_status_from_csv():
+        ...
 
-    #     TL_num = self.set_X_info('Traffic_light')
-    #     # Sec_num = self.set_X_info('Intersection')
-    #     Lane_num = self.set_X_info('Lane_centerline')
-    #     for i in range(TL_num):
-    #         # lane_info
-    #         # 遍历traffic_light中effectlane不为None的项
-    #         if self.Traffic_light[i][7] != None:
-    #             tp_LC = self.Traffic_light[i][7].split(",")
-    #             # 在LC中 遍历单个feature中的每一个lane_id 对应的feature
-    #             for a in tp_LC:
-    #                 # print(type(a))
-    #                 LC_id = int(a)
-    #                 LC_e_node = -1
-    #                 # 遍历LC查找起始ID
-    #                 for x in self.lanecenterlines:
-    #                     if x[1] == LC_id:
-    #                         LC_e_node = x[3]
-                            
+    def Light2V_Lane(self, tl_id):
+        ans = []
 
-    #                 # 遍历LC查找起始点为真实车道终止点的虚拟车道线UID
-    #                 for y in self.lanecenterlines:
-    #                     # if y[2] == LC_e_node & y[8] == 3:
-    #                     if y[2] == LC_e_node:
-    #                         if y[8] == 3:
-    #                             tp[a].append(y[1])
-    #                             # cnt+=1
-    #     # l中保存r2v2r的第一个过程——>r2v
-    #     l = list(tp.items())
-    #     # print(l[0])
-    #     # ('14027556', [14027595, 14027633, 14027634])
+        arr = self.Lane_r2v2r_Light()
+        for i in arr:
+            if (i[3]==tl_id):
+                ans.append(i[1])
 
-    #     tp_v = []
-
-    #     for b in l:
-    #         r_lane = int(b[0])
-    #         for c in b[1]:
-    #             LC_id = c
-    #             LC_e_node = -1
-    #             for x in self.lanecenterlines:
-    #                 if x[1] == LC_id:
-    #                     LC_e_node =x[3]
-
-    #             for y in self.lanecenterlines:
-    #                 if y[2] == LC_e_node:
-    #                     if y[8] != 3:
-    #                         tp_item = []
-    #                         tp_item.append(r_lane)
-    #                         tp_item.append(LC_id)
-    #                         tp_item.append(y[1])
-    #                         tp_v.append(tp_item)
-
-    #     # print(tp_v[0])
-    #     # [14027556, 14027595, 14027475]
-
-    #     return tp_v
-
-                    # tp_f = self.a.getFeatureByUid('Lane_centerline', LC_id)
-                    # v = tp_f.GetFieldAsInteger64('Is_virtual')
-                    # if v==3:
-                    #     # cnt+=1
-                    #     print(a)
-            # 信号灯控制的虚拟车道是否可以通行
-            # # road_info
-            # if self.Traffic_light[i][8] != None:
-            #     tp_RC = self.Traffic_light[i][8].split(",")
-            #     # 遍历traffic_light中effectroad不为None的项
-            #     for item in tp_RC:
-            #         RC_id = item
-            #         # 遍历intersection中in_id包含effectroad的项
-            #         for j in range(Sec_num):
-            #             if RC_id in self.intersections[j][4]:
-            #                 tp_lane = []
-            #                 tp_vir_lane = []
-            #                 # 遍历LC中的真实车道与虚拟车道并匹配
-            #                 for a in self.lanecenterlines:
-            #                     if a[4] == RC_id:
-            #                         if a[5] == 3:
-            #                             # 保存虚拟车道线UID
-            #                             tp_vir_lane.append(a[1])
-            #                         else:
-            #                             tp_lane.append(a[1])
-            #                 # print(RC_id)
-            #                 # cnt+=1
-            
-        # print(cnt)   
-
-
-    # many bug
-    # def LC_connection(self, num):
-    #     tmp_arr = np.empty((num, num), dtype=object)
-    #     cnt1 = 0
-
-    #     for item in self.intersections:
-    #         cnt2 = 0
-
-    #         # record sec_Uid
-    #         tmp_arr[cnt1][0] = item[1]
-
-    #         pre_in_RCid = item[4]
-    #         pre_out_RCid = item[5]
-    #         in_id = pre_in_RCid.split(",")
-    #         out_id = pre_out_RCid.split(",")
-
-    #         for i in in_id:
-    #             tmp1 = self.a.getFeatureByFieldValue('Lane_centerline','RC_id', i)
-    #             Is_virtual1 = tmp1.GetFieldAsInteger64('Is_virtual')
-    #             if Is_virtual1 == 3:
-    #                 for o in out_id:
-    #                     tmp2 = self.a.getFeatureByFieldValue('Lane_centerline','RC_id', o)
-    #                     Is_virtual2 = tmp2.GetFieldAsInteger64('Is_virtual')
-    #                     if Is_virtual2 == 3:
-    #                         pair = str(i) + ',' + str(o)
-    #                         print(pair)
-    #                         tmp_arr[cnt1][cnt2] = pair
-    #                         cnt2 = cnt2 + 1
-            
-    #         cnt1 = cnt1 + 1
-        
-    #     print(tmp_arr[0])
-    #     return 0
+        return ans
     
-    # def section2in_rc_id(self, Sec_id):
-    #     tmp = self.a.getFeatureByUid('Intersection', Sec_id)
-    #     pre_in_id = tmp.GetFieldAsString('In_RC_id')
-    #     in_id = pre_in_id.split(",")
-    #     return in_id
+    def lane_has_traffic_control_measure(self, L_id):
+        flag = self.L2Light_flag.get(L_id)
+        if flag == 1:
+            return True
+        else:
+            return False
     
-    # def section2out_rc_id(self, Sec_id):
-    #     tmp = self.a.getFeatureByUid('Intersection', Sec_id)
-    #     pre_in_id = tmp.GetFieldAsString('Out_RC_id')
-    #     out_id = pre_in_id.split(",")
-    #     return out_id
-    
+def test_map():
+    map = HDMap()
+    print('init done')
+    # map.set_X_info('Lane_centerline')
+    # map.set_X_info('Intersection')
+    # map.set_X_info('Traffic_light')
+    # map.LC_connection(sec_num)
+    # a = map.Lane_r2v2r_Light()
+    # a = map.Light2V_Lane(2772)
+    # print(a)
+    # a = map.lane_is_in_intersection(14027477)
+    a = map.lane_has_traffic_control_measure(1)
+    if a==0:
+        print("uuu")
+    else:
+        print("qqqq")
+    # print(a[0])
 
-map = HDMapDemo()
-# map.set_X_info('Lane_centerline')
-# map.set_X_info('Intersection')
-# map.set_X_info('Traffic_light')
-# map.LC_connection(sec_num)
-map.Light2Sec()
+test_map()
